@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online Hex Editor</title>
+  <style>
+    body {
+      background-color: #111;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+    }
+
+    .file-upload {
+      margin-bottom: 20px;
+    }
+
+    .hex-editor {
+      background-color: #222;
+      border-radius: 5px;
+      padding: 10px;
+      width: 400px;
+      max-width: 100%;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .download-btn {
+      margin-top: 20px;
+    }
+
+    .dark-mode-toggle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+
+    .dark-mode-toggle label {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+    }
+
+    .dark-mode-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: #2196F3;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    .slider.round {
+      border-radius: 34px;
+    }
+
+    .slider.round:before {
+      border-radius: 50%;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Online Hex Editor</h1>
+
+    <div class="file-upload">
+      <input type="file" id="file-input" accept=".bin">
+      <label for="file-input">Upload a file</label>
+    </div>
+
+    <div class="hex-editor" id="hex-editor"></div>
+
+    <button class="download-btn" id="download-btn" disabled>Download</button>
+
+    <div class="dark-mode-toggle">
+      <label class="switch">
+        <input type="checkbox" id="dark-mode-toggle">
+        <span class="slider round"></span>
+      </label>
+    </div>
+  </div>
+
+  <script>
+    // Dark Mode toggle
+    const toggleSwitch = document.getElementById('dark-mode-toggle');
+
+    function switchTheme(e) {
+      if (e.target.checked) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    }
+
+    toggleSwitch.addEventListener('change', switchTheme, false);
+
+    // File upload
+    const fileInput = document.getElementById('file-input');
+    const hexEditor = document.getElementById('hex-editor');
+    const downloadBtn = document.getElementById('download-btn');
+
+    fileInput.addEventListener('change', function () {
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+
+      reader.onload = function (e) {
+        const arrayBuffer = e.target.result;
+        const dataView = new DataView(arrayBuffer);
+
+        let hexString = '';
+        for (let i = 0; i < dataView.byteLength; i++) {
+          const byte = dataView.getUint8(i);
+          const hex = byte.toString(16).padStart(2, '0');
+          hexString += hex.toUpperCase();
+        }
+
+        hexEditor.textContent = hexString;
+        downloadBtn.disabled = false;
+      };
+
+      reader.readAsArrayBuffer(file);
+    });
+
+    // Download file
+    downloadBtn.addEventListener('click', function () {
+      const hexString = hexEditor.textContent;
+      const byteLength = hexString.length / 2;
+      const arrayBuffer = new ArrayBuffer(byteLength);
+      const dataView = new DataView(arrayBuffer);
+
+      for (let i = 0; i < byteLength; i++) {
+        const byteHex = hexString.substr(i * 2, 2);
+        const byte = parseInt(byteHex, 16);
+        dataView.setUint8(i, byte);
+      }
+
+      const blob = new Blob([arrayBuffer]);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'edited_file.bin';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+
+</html>
